@@ -152,4 +152,27 @@ app.get("/shows", async (req, res) => {
     });
 });
 
+app.get("/search", async (req, res) => {
+    let query = req.query.q
+    console.log(query)
+    let contents = [];
+  axios.get(`https://prod-api-cached-2.viewlift.com/search/v1?site=prothomalo&searchTerm=${query}&types=video,series,bundle,audio&languageCode=bn&relatedSearch=true`).then((response) => {
+        let results = response.data.records;
+        results.forEach((result) => {
+                    let contentData = {
+                        title: result.gist.title,
+                        id: result.gist.originalObjectId,
+                        permalink: result.gist.permalink,
+                        description: result.gist.description,
+                        type: result.gist.mediaType,
+                        images: result.gist.imageGist,
+                    };
+                contents.push(contentData);
+        });
+        res.json(contents);
+    }).catch((error) => {
+        console.log(error);
+    });
+});
+
 app.listen(port);
