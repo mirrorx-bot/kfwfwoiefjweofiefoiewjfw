@@ -175,4 +175,29 @@ app.get("/search", async (req, res) => {
     });
 });
 
-app.listen(port);
+app.get("/bn/videos/:movie", async (req, res) => {
+  let contents = {};
+  
+  let movie = req.params.movie;
+  let title, description, images, m3u8, subtitle;
+  await axios.get(`https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?url=/bn/videos/${movie}`).then(async (res) => {
+    try {
+      await axios.get(`https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${res.data.videometaid}`).then((res) => {
+        contents = {
+        title: res.data.contentDetails.title,
+        description: res.data.contentDetails.description,
+        images: res.data.contentDetails.image,
+        m3u8: res.data.url,
+        subtitles: res.data.subtitles,
+      }
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  });
+  res.json(contents);
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
