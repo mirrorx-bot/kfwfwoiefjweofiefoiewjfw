@@ -154,7 +154,6 @@ app.get("/shows", async (req, res) => {
 
 app.get("/search", async (req, res) => {
     let query = req.query.q
-    console.log(query)
     let contents = [];
   axios.get(`https://prod-api-cached-2.viewlift.com/search/v1?site=prothomalo&searchTerm=${query}&types=video,series,bundle,audio&languageCode=bn&relatedSearch=true`).then((response) => {
         let results = response.data.records;
@@ -179,7 +178,6 @@ app.get("/bn/videos/:movie", async (req, res) => {
   let contents = {};
   
   let movie = req.params.movie;
-  let title, description, images, m3u8, subtitle;
   await axios.get(`https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?url=/bn/videos/${movie}`).then(async (res) => {
     try {
       await axios.get(`https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${res.data.videometaid}`).then((res) => {
@@ -195,6 +193,64 @@ app.get("/bn/videos/:movie", async (req, res) => {
       console.log(err);
     }
   });
+  res.json(contents);
+});
+
+app.get("/bn/series/:series", async (req, res) => {
+  let contents;
+  let series = req.params.series;
+  await axios
+    .get(
+      `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?url=/bn/series/${series}`
+    )
+    .then(async (res) => {
+      try {
+        let SeriesData = JSON.parse(res.data.contentdetails);
+
+        let seriesInfoArray = [];
+        let seasonsArray = [];
+
+        seriesInfo = {
+          title: SeriesData.title,
+          images: SeriesData.image,
+        };
+        seriesInfoArray.push(seriesInfo);
+
+        let SeasonsData = JSON.parse(res.data.season);
+
+        for (let i = 0; i < SeasonsData.length; i++) {
+          let episodesArray = [];
+          let episodes = SeasonsData[i].episodes;
+          for (let j = 0; j < episodes.length; j++) {
+            let fileId = episodes[j].fileid;
+            let response = await axios.get(
+              `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${fileId}`
+            );
+            let episodeData = {
+              title: response.data.contentDetails.title,
+              description: response.data.contentDetails.description,
+              images: response.data.contentDetails.image,
+              m3u8: response.data.url,
+              subtitles: response.data.subtitles,
+            };
+            episodesArray.push(episodeData);
+          }
+
+          let seasonData = {
+            season: SeasonsData[i].seasonName,
+            episodes: episodesArray,
+          };
+          seasonsArray.push(seasonData);
+        }
+
+        contents = {
+          info: seriesInfoArray,
+          seasons: seasonsArray,
+        };
+      } catch (err) {
+        console.log(err);
+      }
+    });
   res.json(contents);
 });
 
