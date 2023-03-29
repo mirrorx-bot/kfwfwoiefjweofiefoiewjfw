@@ -207,17 +207,14 @@ app.get("/bn/series/:series", async (req, res) => {
       try {
         let SeriesData = JSON.parse(res.data.contentdetails);
 
-        let seriesInfoArray = [];
         let seasonsArray = [];
 
         seriesInfo = {
           title: SeriesData.title,
           images: SeriesData.image,
         };
-        seriesInfoArray.push(seriesInfo);
 
         let SeasonsData = JSON.parse(res.data.season);
-        console.log(SeasonsData[0].episodes);
 
         for (let i = 0; i < SeasonsData.length; i++) {
           let episodesArray = [];
@@ -239,7 +236,6 @@ app.get("/bn/series/:series", async (req, res) => {
               subtitles: response.data.subtitles,
             };
             episodesArray.push(episodeData);
-            console.log(episodeData);
           }
 
           let seasonData = {
@@ -250,7 +246,7 @@ app.get("/bn/series/:series", async (req, res) => {
         }
 
         contents = {
-          info: seriesInfoArray,
+          info: seriesInfo,
           seasons: seasonsArray,
         };
       } catch (err) {
