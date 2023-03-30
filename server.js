@@ -199,41 +199,43 @@ app.get("/bn/videos/:movie", async (req, res) => {
 app.get("/bn/series/:series", async (req, res) => {
   let contents;
   let series = req.params.series;
+
+  let seriesInfo;
+
   await axios
     .get(
-      `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?url=/bn/series/${series}`
+      `https://prod-api-cached-2.viewlift.com/content/pages?path=%2Fbn%2Fseries%2F${series}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn&countryCode=BD`
     )
     .then(async (res) => {
       try {
-        let SeriesData = JSON.parse(res.data.contentdetails);
+        let seriesData = res.data.modules[0].contentData[0].gist;
+        seriesInfo = {
+          title: seriesData.title,
+          description: seriesData.description,
+          images: seriesData.imageGist,
+        };
 
         let seasonsArray = [];
 
-        seriesInfo = {
-          title: SeriesData.title,
-          images: SeriesData.image,
-        };
-
-        let SeasonsData = JSON.parse(res.data.season);
+        let SeasonsData = res.data.modules[0].contentData[0].seasons;
 
         for (let i = 0; i < SeasonsData.length; i++) {
           let episodesArray = [];
           let episodes = SeasonsData[i].episodes;
           for (let j = 0; j < episodes.length; j++) {
-            let fileId = episodes[j].fileid;
+            let fileId = episodes[j].gist.originalObjectId;
+            let title = episodes[j].gist.title;
+            let description = episodes[j].gist.description;
+            let images = episodes[j].gist.imageGist;
             let response = await axios.get(
               `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${fileId}`
             );
             let episodeData = {
-              title: episodes[j].title,
-              description: response.data.contentDetails
-                ? response.data.contentDetails.description
-                : "",
-              images: response.data.contentDetails
-                ? response.data.contentDetails.image
-                : "",
-              m3u8: response.data.url,
-              subtitles: response.data.subtitles,
+              src: response.data.url,
+              title: title,
+              description: description ?? "",
+              images: images ?? "",
+              subtitles: response.data.subtitles ?? "",
             };
             episodesArray.push(episodeData);
           }
