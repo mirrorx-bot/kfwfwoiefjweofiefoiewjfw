@@ -230,6 +230,36 @@ app.get("/bn/videos/:movie", async (req, res) => {
   res.json(contents);
 });
 
+app.get("/bn/videos/:type/:name", async (req, res) => {
+  let contents = {};
+  await axios
+    .get(
+      `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/videos/${req.params.type}/${req.params.name}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
+    )
+    .then(async (res) => {
+      try {
+        let videoData = res.data.modules[0].contentData[0].gist;
+        await axios
+          .get(
+            `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${videoData.originalObjectId}`
+          )
+          .then((res) => {
+            contents = {
+              title: videoData.title,
+              description:
+                videoData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
+              images: videoData.imageGist ?? "",
+              src: res.data.url,
+              subtitles: res.data.subtitles,
+            };
+          });
+      } catch (err) {
+        console.log(err);
+      }
+    });
+  res.json(contents);
+});
+
 app.get("/bn/series/:series", async (req, res) => {
   let contents, seriesInfo;
   let series = req.params.series;
