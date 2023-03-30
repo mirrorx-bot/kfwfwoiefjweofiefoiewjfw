@@ -211,7 +211,7 @@ app.get("/bn/series/:series", async (req, res) => {
         let seriesData = res.data.modules[0].contentData[0].gist;
         seriesInfo = {
           title: seriesData.title,
-          description: seriesData.description,
+          description: seriesData.description.replace(/(\r\n|\n|\r)/gm, ""),
           images: seriesData.imageGist,
         };
 
@@ -225,7 +225,7 @@ app.get("/bn/series/:series", async (req, res) => {
           for (let j = 0; j < episodes.length; j++) {
             let fileId = episodes[j].gist.originalObjectId;
             let title = episodes[j].gist.title;
-            let description = episodes[j].gist.description;
+            let description = episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, "");
             let images = episodes[j].gist.imageGist;
             let response = await axios.get(
               `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${fileId}`
