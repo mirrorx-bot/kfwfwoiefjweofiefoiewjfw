@@ -6,8 +6,6 @@ const morgan = require("morgan");
 const apicache = require("apicache");
 
 const app = express();
-app.set("view engine", "ejs");
-app.use(express.static("public"));
 app.use(cors());
 
 app.use(morgan("dev"));
@@ -219,8 +217,8 @@ app.get("/bn/videos/:movie", async (req, res) => {
               description:
                 movieData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
               images: movieData.imageGist ?? "",
-              src: res.data.url,
-              subtitles: res.data.subtitles,
+              src: res.data.url ?? "",
+              subtitles: res.data.subtitles ?? "",
             };
           });
       } catch (err) {
@@ -249,8 +247,8 @@ app.get("/bn/videos/:type/:name", async (req, res) => {
               description:
                 videoData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
               images: videoData.imageGist ?? "",
-              src: res.data.url,
-              subtitles: res.data.subtitles,
+              src: res.data.url ?? "",
+              subtitles: res.data.subtitles ?? "",
             };
           });
       } catch (err) {
@@ -294,7 +292,7 @@ app.get("/bn/series/:series", async (req, res) => {
                 episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, "") ??
                 "",
               images: episodes[j].gist.imageGist ?? "",
-              src: response.data.url,
+              src: response.data.url ?? "",
               subtitles: response.data.subtitles ?? "",
             };
             episodesArray.push(episodeData);
