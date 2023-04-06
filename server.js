@@ -1,14 +1,16 @@
 const axios = require("axios");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 
 const morgan = require("morgan");
 const apicache = require("apicache");
 
 const app = express();
+app.use(helmet({ poweredBy: false }));
+app.use(morgan("dev"));
 app.use(cors());
 
-app.use(morgan("dev"));
 let cache = apicache.middleware;
 app.use(cache("1 day"));
 
@@ -198,122 +200,153 @@ app.get("/search", async (req, res) => {
 });
 
 app.get("/bn/videos/:movie", async (req, res) => {
-  let contents = {};
-  let movie = req.params.movie;
-  await axios
-    .get(
-      `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/videos/${movie}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
-    )
-    .then(async (res) => {
-      try {
-        let movieData = res.data.modules[0].contentData[0].gist;
-        await axios
-          .get(
-            `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${movieData.originalObjectId}`
-          )
-          .then((res) => {
-            contents = {
-              title: movieData.title,
-              description:
-                movieData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
-              images: movieData.imageGist ?? "",
-              src: res.data.url ?? "",
-              subtitles: res.data.subtitles ?? "",
-            };
-          });
-      } catch (err) {
-        console.log(err);
-      }
-    });
-  res.json(contents);
+  try {
+    let response = await axios.get(
+      `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/videos/${req.params.movie}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
+    );
+    let movieData = response.data.modules[0].contentData[0].gist;
+    let chorkiResponse = await axios.get(
+      `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${movieData.originalObjectId}`
+    );
+
+    let { title, description, imageGist } = movieData;
+    let { url, subtitles } = chorkiResponse.data;
+
+    let contents = {
+      title,
+      description: description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      images: imageGist ?? null,
+      src: url ?? null,
+      subtitles: subtitles ?? null,
+    };
+    
+    res.json(contents);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.get("/bn/videos/:type/:name", async (req, res) => {
-  let contents = {};
-  await axios
-    .get(
+  try {
+    let response = await axios.get(
       `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/videos/${req.params.type}/${req.params.name}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
-    )
-    .then(async (res) => {
-      try {
-        let videoData = res.data.modules[0].contentData[0].gist;
-        await axios
-          .get(
-            `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${videoData.originalObjectId}`
-          )
-          .then((res) => {
-            contents = {
-              title: videoData.title,
-              description:
-                videoData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
-              images: videoData.imageGist ?? "",
-              src: res.data.url ?? "",
-              subtitles: res.data.subtitles ?? "",
-            };
-          });
-      } catch (err) {
-        console.log(err);
-      }
-    });
-  res.json(contents);
+    );
+    let videoData = response.data.modules[0].contentData[0].gist;
+    let chorkiResponse = await axios.get(
+      `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${videoData.originalObjectId}`
+    );
+
+    let { title, description, imageGist } = videoData;
+    let { url, subtitles } = chorkiResponse.data;
+
+    let contents = {
+      title,
+      description: description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      images: imageGist ?? null,
+      src: url ?? null,
+      subtitles: subtitles ?? null,
+    };
+
+    res.json(contents);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.get("/bn/series/:series", async (req, res) => {
-  let contents, seriesInfo;
-  let series = req.params.series;
-  await axios
-    .get(
-      `https://prod-api-cached-2.viewlift.com/content/pages?path=%2Fbn%2Fseries%2F${series}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn&countryCode=BD`
-    )
-    .then(async (res) => {
-      try {
-        let seriesData = res.data.modules[0].contentData[0].gist;
-        seriesInfo = {
-          title: seriesData.title,
-          description:
-            seriesData.description.replace(/(\r\n|\n|\r)/gm, "") ?? "",
-          images: seriesData.imageGist ?? "",
+  try {
+    let contents, seriesInfo;
+    let response = await axios.get(
+      `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/series/${req.params.series}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
+    );
+    let seriesData = response.data.modules[0].contentData[0].gist;
+    seriesInfo = {
+      title: seriesData.title,
+      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      images: seriesData.imageGist ?? null,
+    };
+    let seasonsArray = [];
+    let SeasonsData = response.data.modules[0].contentData[0].seasons;
+    for (let i = 0; i < SeasonsData.length; i++) {
+      let episodesArray = [];
+      let episodes = SeasonsData[i].episodes;
+      for (let j = 0; j < episodes.length; j++) {
+        let chorkiResponse = await axios.get(
+          `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${episodes[j].gist.originalObjectId}`
+        );
+        let episodeData = {
+          title: episodes[j].gist.title,
+          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+          images: episodes[j].gist.imageGist ?? null,
+          src: chorkiResponse.data.url ?? null,
+          subtitles: chorkiResponse.data.subtitles ?? null,
         };
-
-        let seasonsArray = [];
-
-        let SeasonsData = res.data.modules[0].contentData[0].seasons;
-
-        for (let i = 0; i < SeasonsData.length; i++) {
-          let episodesArray = [];
-          let episodes = SeasonsData[i].episodes;
-          for (let j = 0; j < episodes.length; j++) {
-            let response = await axios.get(
-              `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${episodes[j].gist.originalObjectId}`
-            );
-            let episodeData = {
-              title: episodes[j].gist.title,
-              description:
-                episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, "") ??
-                "",
-              images: episodes[j].gist.imageGist ?? "",
-              src: response.data.url ?? "",
-              subtitles: response.data.subtitles ?? "",
-            };
-            episodesArray.push(episodeData);
-          }
-
-          let seasonData = {
-            season: SeasonsData[i].seasonName,
-            episodes: episodesArray,
-          };
-          seasonsArray.push(seasonData);
-        }
-
-        contents = {
-          info: seriesInfo,
-          seasons: seasonsArray,
-        };
-      } catch (err) {
-        console.log(err);
+        episodesArray.push(episodeData);
       }
-    });
-  res.json(contents);
+      let seasonData = {
+        season: SeasonsData[i].seasonName,
+        episodes: episodesArray,
+      };
+      seasonsArray.push(seasonData);
+    }
+    contents = {
+      info: seriesInfo,
+      seasons: seasonsArray,
+    };
+    res.json(contents);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/bn/series/:series/:name", async (req, res) => {
+  try {
+    let contents, seriesInfo;
+    let response = await axios.get(
+      `https://prod-api-cached-2.viewlift.com/content/pages?path=/bn/series/${req.params.series}/${req.params.name}&site=prothomalo&includeContent=true&moduleOffset=2&moduleLimit=1&languageCode=bn`
+    );
+    let seriesData = response.data.modules[0].contentData[0].gist;
+    seriesInfo = {
+      title: seriesData.title,
+      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      images: seriesData.imageGist ?? null,
+    };
+    let seasonsArray = [];
+    let SeasonsData = response.data.modules[0].contentData[0].seasons;
+    for (let i = 0; i < SeasonsData.length; i++) {
+      let episodesArray = [];
+      let episodes = SeasonsData[i].episodes;
+      for (let j = 0; j < episodes.length; j++) {
+        let chorkiResponse = await axios.get(
+          `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${episodes[j].gist.originalObjectId}`
+        );
+        let episodeData = {
+          title: episodes[j].gist.title,
+          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+          images: episodes[j].gist.imageGist ?? null,
+          src: chorkiResponse.data.url ?? null,
+          subtitles: chorkiResponse.data.subtitles ?? null,
+        };
+        episodesArray.push(episodeData);
+      }
+      let seasonData = {
+        season: SeasonsData[i].seasonName,
+        episodes: episodesArray,
+      };
+      seasonsArray.push(seasonData);
+    }
+    contents = {
+      info: seriesInfo,
+      seasons: seasonsArray,
+    };
+    res.json(contents);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.listen(port, () => {
