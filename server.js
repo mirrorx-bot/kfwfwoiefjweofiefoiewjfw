@@ -214,7 +214,7 @@ app.get("/bn/videos/:movie", async (req, res) => {
 
     let contents = {
       title,
-      description: description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      description: description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
       images: imageGist ?? null,
       src: url ?? null,
       subtitles: subtitles ?? null,
@@ -242,7 +242,7 @@ app.get("/bn/videos/:type/:name", async (req, res) => {
 
     let contents = {
       title,
-      description: description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      description: description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
       images: imageGist ?? null,
       src: url ?? null,
       subtitles: subtitles ?? null,
@@ -264,7 +264,7 @@ app.get("/bn/series/:series", async (req, res) => {
     let seriesData = response.data.modules[0].contentData[0].gist;
     seriesInfo = {
       title: seriesData.title,
-      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
       images: seriesData.imageGist ?? null,
     };
     let seasonsArray = [];
@@ -273,15 +273,11 @@ app.get("/bn/series/:series", async (req, res) => {
       let episodesArray = [];
       let episodes = SeasonsData[i].episodes;
       for (let j = 0; j < episodes.length; j++) {
-        let chorkiResponse = await axios.get(
-          `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${episodes[j].gist.originalObjectId}`
-        );
         let episodeData = {
           title: episodes[j].gist.title,
-          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
           images: episodes[j].gist.imageGist ?? null,
-          src: chorkiResponse.data.url ?? null,
-          subtitles: chorkiResponse.data.subtitles ?? null,
+          id: episodes[j].gist.originalObjectId,
         };
         episodesArray.push(episodeData);
       }
@@ -311,7 +307,7 @@ app.get("/bn/series/:series/:name", async (req, res) => {
     let seriesData = response.data.modules[0].contentData[0].gist;
     seriesInfo = {
       title: seriesData.title,
-      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+      description: seriesData.description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
       images: seriesData.imageGist ?? null,
     };
     let seasonsArray = [];
@@ -320,15 +316,11 @@ app.get("/bn/series/:series/:name", async (req, res) => {
       let episodesArray = [];
       let episodes = SeasonsData[i].episodes;
       for (let j = 0; j < episodes.length; j++) {
-        let chorkiResponse = await axios.get(
-          `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${episodes[j].gist.originalObjectId}`
-        );
         let episodeData = {
           title: episodes[j].gist.title,
-          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, null) ?? null,
+          description: episodes[j].gist.description.replace(/(\r\n|\n|\r)/gm, "") ?? null,
           images: episodes[j].gist.imageGist ?? null,
-          src: chorkiResponse.data.url ?? null,
-          subtitles: chorkiResponse.data.subtitles ?? null,
+          id: episodes[j].gist.originalObjectId,
         };
         episodesArray.push(episodeData);
       }
@@ -343,6 +335,23 @@ app.get("/bn/series/:series/:name", async (req, res) => {
       seasons: seasonsArray,
     };
     res.json(contents);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/id/:id", async (req, res) => {
+  try {
+    let response = await axios.get(
+      `https://api.raihanmiraj.com/hoichoichorki/chorkiapi.php/?id=${req.params.id}`
+    );
+    let contents = {
+      src: response.data.url,
+      subtitles: response.data.subtitles,
+    };
+    res.json(contents)
+    
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Internal Server Error" });
